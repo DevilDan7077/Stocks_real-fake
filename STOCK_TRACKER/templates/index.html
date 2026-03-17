@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StockTracker Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#04060f;
+  --glass:rgba(255,255,255,0.03);
+  --border:rgba(255,255,255,0.08);
+  --border2:rgba(255,255,255,0.15);
+  --text:#e8eef8;
+  --muted:#3d4f6b;
+  --muted2:#6b7fa0;
+  --accent:#4d9fff;
+  --accent2:#63ffdb;
+  --up:#39d98a;
+  --down:#ff5c5c;
+  --up-glow:rgba(57,217,138,0.12);
+  --down-glow:rgba(255,92,92,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden}
+
+/* BG */
+.bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(77,159,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(77,159,255,0.04) 1px,transparent 1px);background-size:50px 50px}
+.orb{position:absolute;border-radius:50%;filter:blur(80px)}
+.orb1{width:500px;height:500px;background:radial-gradient(circle,rgba(77,159,255,0.09),transparent 70%);top:-150px;left:-150px;animation:o1 18s ease-in-out infinite alternate}
+.orb2{width:400px;height:400px;background:radial-gradient(circle,rgba(99,255,219,0.06),transparent 70%);bottom:-100px;right:-100px;animation:o2 22s ease-in-out infinite alternate}
+@keyframes o1{from{transform:translate(0,0)}to{transform:translate(200px,150px)}}
+@keyframes o2{from{transform:translate(0,0)}to{transform:translate(-150px,-100px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* HEADER */
+header{position:relative;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:16px 40px;background:rgba(4,6,15,0.92);backdrop-filter:blur(24px);border-bottom:1px solid var(--border);animation:slideDown .5s ease both}
+.logo{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.95rem;box-shadow:0 0 18px rgba(77,159,255,0.3)}
+.logo-text{background:linear-gradient(135deg,#fff 30%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo-sub{font-size:0.55rem;color:var(--muted2);font-family:'JetBrains Mono',monospace;-webkit-text-fill-color:var(--muted2);letter-spacing:2px}
+.hdr-right{display:flex;align-items:center;gap:16px}
+.live-pill{display:flex;align-items:center;gap:6px;background:rgba(57,217,138,0.08);border:1px solid rgba(57,217,138,0.2);border-radius:20px;padding:5px 12px;font-size:0.6rem;letter-spacing:2px;color:var(--up)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--up);box-shadow:0 0 8px var(--up);animation:blink 1.4s ease-in-out infinite}
+.hdr-time{font-size:0.65rem;color:var(--muted2)}
+
+/* TICKER */
+.ticker{position:relative;z-index:99;overflow:hidden;background:rgba(4,6,15,0.7);border-bottom:1px solid var(--border);padding:8px 0}
+.ticker::before,.ticker::after{content:'';position:absolute;top:0;bottom:0;width:60px;z-index:2;pointer-events:none}
+.ticker::before{left:0;background:linear-gradient(90deg,var(--bg),transparent)}
+.ticker::after{right:0;background:linear-gradient(-90deg,var(--bg),transparent)}
+.ticker-track{display:flex;gap:40px;width:max-content;animation:scroll 35s linear infinite}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ti{display:flex;align-items:center;gap:7px;font-size:0.68rem;white-space:nowrap}
+.ti-s{color:var(--accent);font-weight:600;letter-spacing:1px}
+.ti-up{color:var(--up)}.ti-dn{color:var(--down)}.ti-dot{color:var(--muted);font-size:0.45rem}
+
+/* MARKET CARDS */
+.mkt{position:relative;z-index:5;display:flex;gap:12px;padding:20px 40px 0;animation:fadeUp .6s ease .1s both}
+.mkt-card{flex:1;background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:18px 20px;transition:border-color .3s,transform .3s;cursor:default}
+.mkt-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.mkt-name{font-size:0.56rem;letter-spacing:2.5px;color:var(--muted2);margin-bottom:7px}
+.mkt-val{font-family:'Syne',sans-serif;font-size:1.35rem;font-weight:700}
+.mkt-chg{font-size:0.68rem;margin-top:4px}
+.mkt-chg.up{color:var(--up)}.mkt-chg.dn{color:var(--down)}
+.mini-bars{display:flex;align-items:flex-end;gap:2px;height:22px;margin-top:8px}
+.mb{flex:1;border-radius:2px 2px 0 0;min-height:3px}
+
+/* MAIN LAYOUT */
+.main{position:relative;z-index:5;display:grid;grid-template-columns:1fr 360px;gap:16px;padding:16px 40px 50px}
+.left{display:flex;flex-direction:column;gap:16px}
+.right{display:flex;flex-direction:column;gap:16px}
+
+/* CARD */
+.card{background:var(--glass);border:1px solid var(--border);border-radius:18px;padding:24px 26px;animation:fadeUp .6s ease both;transition:border-color .3s}
+.card:hover{border-color:var(--border2)}
+.c1{animation-delay:.12s}.c2{animation-delay:.2s}.c3{animation-delay:.28s}
+.sec-lbl{font-size:0.56rem;letter-spacing:3px;color:var(--muted2);text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.sec-lbl::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* SEARCH */
+.s-wrap{display:flex;gap:8px;margin-bottom:20px}
+.s-in{flex:1;background:rgba(0,0,0,0.5);border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;outline:none;transition:border-color .3s,box-shadow .3s}
+.s-in:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(77,159,255,0.1)}
+.s-in::placeholder{color:var(--muted);text-transform:none;letter-spacing:.5px;font-size:.72rem}
+.btn-s{background:linear-gradient(135deg,var(--accent),#2d7fff);color:#fff;border:none;padding:12px 20px;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:.75rem;letter-spacing:1px;cursor:pointer;transition:all .2s;box-shadow:0 4px 12px rgba(77,159,255,0.2);white-space:nowrap}
+.btn-s:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(77,159,255,0.35)}
+
+/* STOCK DETAIL */
+.stock-box{background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:12px;padding:20px;animation:fadeUp .3s ease both}
+.sd-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.sd-sym{font-size:0.56rem;letter-spacing:3px;color:var(--accent);margin-bottom:3px}
+.sd-name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700}
+.sd-exch{font-size:.58rem;color:var(--muted2);margin-top:3px}
+.sd-price{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;text-align:right;background:linear-gradient(135deg,#fff,var(--text));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sd-chg{font-size:.74rem;text-align:right;margin-top:3px}
+.sd-chg.up{color:var(--up)}.sd-chg.dn{color:var(--down)}
+.sd-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sb{background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:9px;padding:10px 12px}
+.sb-l{font-size:.54rem;letter-spacing:2px;color:var(--muted2);margin-bottom:3px}
+.sb-v{font-size:.84rem}
+.sb-v.up{color:var(--up)}.sb-v.dn{color:var(--down)}
+.no-res{text-align:center;padding:20px;color:var(--muted2);font-size:.72rem;letter-spacing:1px}
+
+/* MARKET WATCH TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl thead th{font-size:.55rem;letter-spacing:2px;color:var(--muted2);text-align:left;padding:0 10px 12px;border-bottom:1px solid var(--border)}
+.tbl tbody tr{border-bottom:1px solid rgba(255,255,255,0.025);transition:background .2s;cursor:pointer}
+.tbl tbody tr:hover{background:rgba(255,255,255,0.025)}
+.tbl tbody tr:last-child{border-bottom:none}
+.tbl tbody td{padding:11px 10px;font-size:.76rem}
+.td-s{color:var(--accent);font-weight:600;letter-spacing:1px}
+.td-n{color:var(--muted2);font-size:.66rem}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:5px;font-size:.66rem}
+.badge.up{background:var(--up-glow);color:var(--up);border:1px solid rgba(57,217,138,0.2)}
+.badge.dn{background:var(--down-glow);color:var(--down);border:1px solid rgba(255,92,92,0.2)}
+
+/* PORTFOLIO */
+.p-form{display:flex;gap:8px;margin-bottom:16px}
+.p-in{background:rgba(0,0,0,0.5);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:9px;font-family:'JetBrains Mono',monospace;font-size:.76rem;outline:none;transition:border-color .3s}
+.p-in:focus{border-color:var(--accent)}
+.p-in::placeholder{color:var(--muted);font-size:.68rem}
+.p-sym{width:100px;text-transform:uppercase;letter-spacing:1px}
+.p-qty{width:65px}
+.btn-add{background:linear-gradient(135deg,var(--accent2),#00c9a7);color:#04060f;border:none;padding:10px 14px;border-radius:9px;font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;letter-spacing:1px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-add:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(99,255,219,0.2)}
+
+/* PORTFOLIO TABLE — fixed layout so columns don't overflow */
+.port-tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+.port-tbl thead th{font-size:.52rem;letter-spacing:1.5px;color:var(--muted2);text-align:left;padding:0 6px 10px;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap}
+.port-tbl colgroup col:nth-child(1){width:18%}
+.port-tbl colgroup col:nth-child(2){width:12%}
+.port-tbl colgroup col:nth-child(3){width:20%}
+.port-tbl colgroup col:nth-child(4){width:20%}
+.port-tbl colgroup col:nth-child(5){width:18%}
+.port-tbl colgroup col:nth-child(6){width:12%}
+.port-tbl tbody tr{border-bottom:1px solid rgba(255,255,255,0.025);transition:background .2s}
+.port-tbl tbody tr:hover{background:rgba(255,255,255,0.02)}
+.port-tbl tbody tr:last-child{border-bottom:none}
+.port-tbl tbody td{padding:10px 6px;font-size:.74rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* REMOVE BUTTON — always visible, red, clear */
+.btn-rm{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;
+  background:rgba(255,92,92,0.12);
+  color:var(--down);
+  border:1px solid rgba(255,92,92,0.4);
+  border-radius:6px;
+  font-size:.8rem;
+  cursor:pointer;
+  transition:all .2s;
+  font-family:'JetBrains Mono',monospace;
+  line-height:1;
+}
+.btn-rm:hover{background:rgba(255,92,92,0.25);border-color:var(--down);transform:scale(1.1)}
+
+.total-bar{margin-top:14px;background:linear-gradient(135deg,rgba(77,159,255,0.06),rgba(99,255,219,0.04));border:1px solid rgba(77,159,255,0.15);border-radius:11px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.total-lbl{font-size:.56rem;letter-spacing:2px;color:var(--muted2)}
+.total-num{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.empty{text-align:center;padding:24px 12px;color:var(--muted2);font-size:.7rem;letter-spacing:1px;line-height:2}
+
+/* API GRID */
+.api-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.api-item{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:9px;padding:10px 12px;transition:border-color .2s}
+.api-item:hover{border-color:var(--border2)}
+.api-top{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.m{font-size:.52rem;padding:2px 6px;border-radius:4px;font-weight:600;letter-spacing:1px}
+.m-g{background:rgba(77,159,255,0.1);color:var(--accent);border:1px solid rgba(77,159,255,0.2)}
+.m-p{background:rgba(99,255,219,0.1);color:var(--accent2);border:1px solid rgba(99,255,219,0.2)}
+.m-d{background:rgba(255,92,92,0.1);color:var(--down);border:1px solid rgba(255,92,92,0.2)}
+.api-desc{font-size:.62rem;color:var(--muted2)}
+.api-path{font-size:.6rem;color:var(--muted);word-break:break-all}
+
+/* FLASH */
+.flash{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:10px;font-size:.72rem;letter-spacing:.5px;margin-bottom:12px;animation:fadeUp .3s ease both}
+.flash.success{background:rgba(57,217,138,0.07);border:1px solid rgba(57,217,138,0.25);color:var(--up)}
+.flash.error{background:rgba(255,92,92,0.07);border:1px solid rgba(255,92,92,0.25);color:var(--down)}
+
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--muted);border-radius:2px}
+
+@media(max-width:900px){
+  .main,.mkt,header{padding-left:16px;padding-right:16px}
+  .main{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="bg-grid"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">📈</div>
+    <div>
+      <div class="logo-text">StockTracker Pro</div>
+      <div class="logo-sub">FLASK · PYTHON · YAHOO FINANCE</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="live-pill"><div class="live-dot"></div>LIVE</div>
+    <div class="hdr-time" id="clock">{{ now }}</div>
+  </div>
+</header>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track">
+    {% for s in all_stocks %}
+    <div class="ti">
+      <span class="ti-s">{{ s.symbol }}</span>
+      <span style="color:var(--text)">${{ "%.2f"|format(s.price) }}</span>
+      <span class="{{ 'ti-up' if s.change_pct >= 0 else 'ti-dn' }}">{{ "▲" if s.change_pct >= 0 else "▼" }}{{ "%.2f"|format(s.change_pct|abs) }}%</span>
+    </div>
+    <span class="ti-dot">◆</span>
+    {% endfor %}
+    {% for s in all_stocks %}
+    <div class="ti">
+      <span class="ti-s">{{ s.symbol }}</span>
+      <span style="color:var(--text)">${{ "%.2f"|format(s.price) }}</span>
+      <span class="{{ 'ti-up' if s.change_pct >= 0 else 'ti-dn' }}">{{ "▲" if s.change_pct >= 0 else "▼" }}{{ "%.2f"|format(s.change_pct|abs) }}%</span>
+    </div>
+    <span class="ti-dot">◆</span>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- MARKET -->
+<div class="mkt">
+  {% for name, idx in market.items() %}
+  <div class="mkt-card">
+    <div class="mkt-name">{{ name }}</div>
+    <div class="mkt-val">{{ "{:,.2f}".format(idx.value) }}</div>
+    <div class="mkt-chg {{ 'up' if idx.change >= 0 else 'dn' }}">{{ "▲" if idx.change >= 0 else "▼" }} {{ "%.2f"|format(idx.change_pct|abs) }}% &nbsp; {{ "%+.2f"|format(idx.change) }}</div>
+    <div class="mini-bars" id="bars{{ loop.index }}"></div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="left">
+
+    {% for msg, cat in messages %}
+    <div class="flash {{ cat }}">{{ "✓" if cat=="success" else "✕" }} {{ msg }}</div>
+    {% endfor %}
+
+    <!-- SEARCH -->
+    <div class="card c1">
+      <div class="sec-lbl">Search Stock</div>
+      <form class="s-wrap" method="GET" action="/">
+        <input class="s-in" type="text" name="symbol" placeholder="Enter ticker — AAPL, TSLA, NVDA, MSFT..." value="{{ search_symbol or '' }}" maxlength="5" autocomplete="off"/>
+        <button class="btn-s" type="submit">SEARCH →</button>
+      </form>
+      {% if stock %}
+      <div class="stock-box">
+        <div class="sd-top">
+          <div>
+            <div class="sd-sym">{{ stock.symbol }} · {{ stock.exchange }}</div>
+            <div class="sd-name">{{ stock.name }}</div>
+            <div class="sd-exch">{{ stock.currency }} · {{ stock.last_updated[:10] }}</div>
+          </div>
+          <div>
+            <div class="sd-price">${{ "%.2f"|format(stock.price) }}</div>
+            <div class="sd-chg {{ 'up' if stock.change >= 0 else 'dn' }}">{{ "%+.2f"|format(stock.change) }} ({{ "%+.2f"|format(stock.change_pct) }}%)</div>
+          </div>
+        </div>
+        <div class="sd-stats">
+          <div class="sb"><div class="sb-l">VOLUME</div><div class="sb-v">{{ "{:,}".format(stock.volume) }}</div></div>
+          <div class="sb"><div class="sb-l">MARKET CAP</div><div class="sb-v">${{ "%.2fT"|format(stock.market_cap/1e12) }}</div></div>
+          <div class="sb"><div class="sb-l">52W HIGH</div><div class="sb-v up">${{ stock.week_52_high }}</div></div>
+          <div class="sb"><div class="sb-l">52W LOW</div><div class="sb-v dn">${{ stock.week_52_low }}</div></div>
+          <div class="sb"><div class="sb-l">P/E RATIO</div><div class="sb-v">{{ stock.pe_ratio or "N/A" }}</div></div>
+          <div class="sb"><div class="sb-l">EXCHANGE</div><div class="sb-v">{{ stock.exchange }}</div></div>
+        </div>
+      </div>
+      {% elif search_symbol %}
+      <div class="no-res">Symbol "{{ search_symbol }}" not found. Try: AAPL, MSFT, TSLA, NVDA...</div>
+      {% endif %}
+    </div>
+
+    <!-- MARKET WATCH -->
+    <div class="card c2">
+      <div class="sec-lbl">Market Watch</div>
+      <table class="tbl">
+        <thead><tr><th>SYMBOL</th><th>COMPANY</th><th>PRICE</th><th>CHANGE</th></tr></thead>
+        <tbody>
+          {% for s in all_stocks %}
+          <tr onclick="window.location='/?symbol={{ s.symbol }}'">
+            <td><span class="td-s">{{ s.symbol }}</span></td>
+            <td><span class="td-n">{{ s.name }}</span></td>
+            <td style="color:var(--text)">${{ "%.2f"|format(s.price) }}</td>
+            <td><span class="badge {{ 'up' if s.change_pct >= 0 else 'dn' }}">{{ "▲" if s.change_pct >= 0 else "▼" }} {{ "%.2f"|format(s.change_pct|abs) }}%</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right">
+
+    <!-- PORTFOLIO -->
+    <div class="card c3">
+      <div class="sec-lbl">My Portfolio</div>
+      <form class="p-form" method="POST" action="/portfolio/add">
+        <input class="p-in p-sym" type="text" name="symbol" placeholder="Symbol" maxlength="5" required/>
+        <input class="p-in p-qty" type="number" name="quantity" placeholder="Qty" min="1" max="99999" required/>
+        <button class="btn-add" type="submit">+ ADD</button>
+      </form>
+
+      {% if portfolio %}
+      <table class="port-tbl">
+        <colgroup>
+          <col/><col/><col/><col/><col/><col/>
+        </colgroup>
+        <thead>
+          <tr>
+            <th>SYM</th>
+            <th>QTY</th>
+            <th>PRICE</th>
+            <th>VALUE</th>
+            <th>CHG%</th>
+            <th>DEL</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in portfolio %}
+          <tr>
+            <td><span class="td-s">{{ item.symbol }}</span></td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ "%.2f"|format(item.price) }}</td>
+            <td>${{ "{:,.0f}".format(item.market_value) }}</td>
+            <td><span class="badge {{ 'up' if item.change_pct >= 0 else 'dn' }}">{{ "▲" if item.change_pct >= 0 else "▼" }}{{ "%.1f"|format(item.change_pct|abs) }}%</span></td>
+            <td>
+              <form method="POST" action="/portfolio/remove/{{ item.symbol }}" style="margin:0">
+                <button class="btn-rm" type="submit" title="Remove {{ item.symbol }}">✕</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="total-bar">
+        <div class="total-lbl">TOTAL VALUE</div>
+        <div class="total-num">${{ "{:,.2f}".format(total_value) }}</div>
+      </div>
+      {% else %}
+      <div class="empty">No holdings yet.<br>Add a stock above<br>to start tracking.</div>
+      {% endif %}
+    </div>
+
+    <!-- API REFERENCE -->
+    <div class="card c3">
+      <div class="sec-lbl">API Endpoints</div>
+      <div class="api-grid">
+        {% set eps = [
+          ("GET","/api/market","Market indices"),
+          ("GET","/api/stocks","All symbols"),
+          ("GET","/api/stock/AAPL","Single quote"),
+          ("GET","/api/stocks/batch?symbols=AAPL,MSFT","Batch quotes"),
+          ("GET","/api/stock/AAPL/history?period=1mo","OHLCV history"),
+          ("POST","/api/portfolio","Add to portfolio"),
+          ("GET","/api/portfolio","View portfolio"),
+          ("DELETE","/api/portfolio/AAPL","Remove stock"),
+        ] %}
+        {% for method, path, desc in eps %}
+        <div class="api-item">
+          <div class="api-top">
+            <span class="m {{ 'm-g' if method=='GET' else 'm-p' if method=='POST' else 'm-d' }}">{{ method }}</span>
+            <span class="api-desc">{{ desc }}</span>
+          </div>
+          <div class="api-path">{{ path }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Clock
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    n.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})+
+    '  '+n.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+setInterval(tick,1000);tick();
+
+// Auto refresh every 60s
+setTimeout(()=>location.reload(),60000);
+
+// Uppercase inputs
+document.querySelectorAll('.p-sym,.s-in').forEach(el=>
+  el.addEventListener('input',()=>el.value=el.value.toUpperCase())
+);
+
+// Mini bar charts
+document.querySelectorAll('.mini-bars').forEach(wrap=>{
+  const isUp=wrap.closest('.mkt-card').querySelector('.mkt-chg').classList.contains('up');
+  const color=isUp?'var(--up)':'var(--down)';
+  for(let i=0;i<14;i++){
+    const b=document.createElement('div');
+    b.className='mb';
+    b.style.cssText=`height:${20+Math.random()*80}%;background:${color};opacity:${0.2+(i/14)*0.6};flex:1`;
+    wrap.appendChild(b);
+  }
+});
+</script>
+</body>
+</html>
